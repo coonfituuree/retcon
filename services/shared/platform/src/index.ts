@@ -3,3 +3,4 @@ export * from './module';
 export * from './config';
 export * from './http';
 export * from './database/typeorm-options';
+export * from './security';

@@ -1,8 +1,10 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { compare, hash } from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { RefreshToken } from './entities/refresh-token.entity';
 import { DataSource, Repository } from 'typeorm';
 import type { EntityManager } from 'typeorm';
 import { AuthSession } from './entities/auth-session.entity';
@@ -11,6 +13,7 @@ import { User } from '../users/entities/user.entity';
 import type { LoginDto } from './dto/login.dto';
 import type { RegisterDto } from './dto/register.dto';
 import { publicUser } from '../../shared/utils/user-response';
+const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
 @Injectable()
 export class AuthService {
   private readonly dummyHash: Promise<string>;
@@ -58,6 +61,28 @@ export class AuthService {
       expiresAt.getUTCDate() + this.config.getOrThrow<number>('auth.refreshTokenTtlDays'),
     );
     await tx.getRepository(AuthSession).insert({ id: sessionId, userId: user.id, expiresAt });
-    return { sessionId, user: publicUser(user) };
+    return this.issueTokens(tx, user, sessionId);
+  }
+  private async issueTokens(tx: EntityManager, user: User, sessionId: string) {
+    const refreshToken = randomBytes(48).toString('hex');
+    await tx.getRepository(RefreshToken).insert({ tokenHash: tokenHash(refreshToken), sessionId });
+    const accessToken = jwt.sign(
+      { tenantId: user.tenantId, role: user.role, sid: sessionId },
+      this.config.getOrThrow<string>('jwt.privateKey'),
+      {
+        algorithm: 'RS256',
+        subject: user.id,
+        issuer: this.config.getOrThrow<string>('jwt.issuer'),
+        audience: this.config.getOrThrow<string>('jwt.audience'),
+        expiresIn: this.config.getOrThrow<number>('jwt.accessTokenTtlSeconds'),
+      },
+    );
+    return {
+      accessToken,
+      refreshToken,
+      tokenType: 'Bearer',
+      expiresIn: this.config.getOrThrow<number>('jwt.accessTokenTtlSeconds'),
+      user: publicUser(user),
+    };
   }
 }
