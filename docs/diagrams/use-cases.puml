@@ -1,0 +1,28 @@
+@startuml
+!pragma layout smetana
+title Retcon - Use cases
+skinparam defaultFontName Arial
+skinparam shadowing false
+left to right direction
+actor User
+actor Operator
+actor Auditor
+actor Administrator as Admin
+Operator --|> User
+Auditor --|> User
+Admin --|> Operator
+rectangle Retcon {
+ usecase "Sign in / refresh / logout\n[implemented]" as Session
+ usecase "Read own profile\n[implemented]" as Profile
+ usecase "Create organization users\n[implemented]" as Users
+ usecase "Record and synchronize movements\n[planned]" as Capture
+ usecase "Inspect movement history\n[planned]" as History
+ usecase "Resolve discrepancies\n[planned]" as Resolve
+}
+User --> Session
+User --> Profile
+Operator --> Capture
+User --> History
+Admin --> Users
+Admin --> Resolve
+@enduml

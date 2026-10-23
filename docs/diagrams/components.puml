@@ -1,0 +1,19 @@
+@startuml
+!pragma layout smetana
+title Retcon - Current executable components
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam componentStyle rectangle
+top to bottom direction
+component "HTTP client / PowerShell" as Client
+component "Nginx :8080" as Gateway
+component "Auth :3001\nauth / users / organizations" as Auth
+database "Auth PostgreSQL\norganizations / users\nsessions / refresh_tokens" as DB
+Client --> Gateway : HTTP /api/v1/auth
+Gateway --> Auth : HTTP
+Auth --> DB : TypeORM
+note bottom of DB
+ Business accounting and offline client are planned.
+ They are not executable components of this revision.
+end note
+@enduml

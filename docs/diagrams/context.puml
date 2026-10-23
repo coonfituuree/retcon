@@ -1,0 +1,14 @@
+@startuml
+!pragma layout smetana
+title Retcon - System context
+skinparam defaultFontName Arial
+skinparam shadowing false
+left to right direction
+actor Operator
+actor Administrator
+actor Auditor
+rectangle "Retcon\nReusable-container tracking\nTarget business capabilities planned\nIdentity backend implemented" as Retcon
+Operator --> Retcon : Capture and inspect operations
+Administrator --> Retcon : Manage access and review discrepancies
+Auditor --> Retcon : Inspect records and decisions
+@enduml
