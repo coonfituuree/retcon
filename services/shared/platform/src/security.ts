@@ -1,5 +1,6 @@
 import {
   createParamDecorator,
+  ForbiddenException,
   Injectable,
   SetMetadata,
   UnauthorizedException,
@@ -10,11 +11,12 @@ import { Reflector } from '@nestjs/core';
 import { PrincipalDto } from '@retcon/contracts';
 import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
-import type { Principal } from '@retcon/contracts';
+import type { Principal, Role } from '@retcon/contracts';
 import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
 
 export const Public = () => SetMetadata('retcon.public', true);
+export const Roles = (...roles: Role[]) => SetMetadata('retcon.roles', roles);
 export const Actor = createParamDecorator(
   (_data: unknown, context: ExecutionContext): Principal =>
     context.switchToHttp().getRequest<Request & { actor: Principal }>().actor,
@@ -48,6 +50,9 @@ export class AccessGuard implements CanActivate {
     } catch {
       throw new UnauthorizedException('Invalid or expired access token');
     }
+    const roles = this.reflector.getAllAndOverride<Role[]>('retcon.roles', targets);
+    if (roles && !roles.includes(actor.role))
+      throw new ForbiddenException('Insufficient permissions');
     request.actor = actor;
     return true;
   }
