@@ -1,0 +1,10 @@
+packages:
+  - auth
+  - shared/*
+injectWorkspacePackages: true
+syncInjectedDepsAfterScripts:
+  - build
+ignoredBuiltDependencies:
+  - '@scarf/scarf'
+onlyBuiltDependencies:
+  - bcrypt
