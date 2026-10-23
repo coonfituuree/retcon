@@ -85,4 +85,29 @@ export class AuthService {
       user: publicUser(user),
     };
   }
+  async refresh(token: string) {
+    const result = await this.db.transaction(async (tx) => {
+      const tokens = tx.getRepository(RefreshToken);
+      const knownToken = await tokens.findOneBy({ tokenHash: tokenHash(token) });
+      if (!knownToken) return null;
+      const sessions = tx.getRepository(AuthSession);
+      // Lock the family first; reread the token after competing rotations commit.
+      const session = await sessions.findOne({
+        where: { id: knownToken.sessionId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!session || session.revokedAt || session.expiresAt.getTime() <= Date.now()) return null;
+      const currentToken = await tokens.findOneByOrFail({ tokenHash: knownToken.tokenHash });
+      if (currentToken.consumedAt) {
+        await sessions.update({ id: session.id }, { revokedAt: new Date() });
+        return null;
+      }
+      const user = await tx.getRepository(User).findOneBy({ id: session.userId, active: true });
+      if (!user) return null;
+      await tokens.update({ tokenHash: currentToken.tokenHash }, { consumedAt: new Date() });
+      return this.issueTokens(tx, user, session.id);
+    });
+    if (!result) throw new UnauthorizedException('Invalid refresh token or session');
+    return result;
+  }
 }

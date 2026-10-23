@@ -4,6 +4,7 @@ import { Public } from '@retcon/platform';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { RefreshDto } from './dto/refresh.dto';
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
@@ -18,5 +19,11 @@ export class AuthController {
   @HttpCode(200)
   login(@Body() body: LoginDto) {
     return this.auth.login(body);
+  }
+  @Public()
+  @Post('refresh')
+  @HttpCode(200)
+  refresh(@Body() body: RefreshDto) {
+    return this.auth.refresh(body.refreshToken);
   }
 }
