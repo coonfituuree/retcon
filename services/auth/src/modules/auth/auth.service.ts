@@ -4,15 +4,16 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { compare, hash } from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { RefreshToken } from './entities/refresh-token.entity';
 import { DataSource, Repository } from 'typeorm';
 import type { EntityManager } from 'typeorm';
 import { AuthSession } from './entities/auth-session.entity';
 import { Organization } from '../organizations/entities/organization.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from '../users/entities/user.entity';
 import type { LoginDto } from './dto/login.dto';
 import type { RegisterDto } from './dto/register.dto';
 import { publicUser } from '../../shared/utils/user-response';
+
 const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
 @Injectable()
 export class AuthService {
@@ -109,5 +110,14 @@ export class AuthService {
     });
     if (!result) throw new UnauthorizedException('Invalid refresh token or session');
     return result;
+  }
+  async logout(token: string) {
+    const refreshToken = await this.db
+      .getRepository(RefreshToken)
+      .findOneBy({ tokenHash: tokenHash(token) });
+    if (refreshToken)
+      await this.db
+        .getRepository(AuthSession)
+        .update({ id: refreshToken.sessionId }, { revokedAt: new Date() });
   }
 }
