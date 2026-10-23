@@ -1,0 +1,86 @@
+name: retcon
+
+x-runtime: &runtime
+  restart: unless-stopped
+  init: true
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  stop_grace_period: 40s
+  networks: [backend]
+  mem_limit: 512m
+
+services:
+  auth-db:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: retcon_auth
+      POSTGRES_USER: retcon_auth
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:?Run pnpm setup:local}
+    ports: ['127.0.0.1:5433:5432']
+    volumes: [auth_data:/var/lib/postgresql/data]
+    networks: [backend]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U retcon_auth -d retcon_auth']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  auth:
+    <<: *runtime
+    build: { context: ., dockerfile: auth/Dockerfile, target: runtime }
+    environment:
+      SERVICE: auth
+      NODE_ENV: ${NODE_ENV:-development}
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-true}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-12}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TRUST_PROXY_HOPS: 1
+      CORS_ORIGINS: ${CORS_ORIGINS:?Run pnpm setup:local}
+      SWAGGER_ENABLED: 'false'
+      REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-false}
+      AUTH_PORT: 3001
+      AUTH_DATABASE_URL: postgresql://retcon_auth:${AUTH_DB_PASSWORD}@auth-db:5432/retcon_auth
+      JWT_ISSUER: ${JWT_ISSUER:-retcon-auth}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-retcon-api}
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public
+      JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private
+      ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS:-900}
+      JWT_CLOCK_TOLERANCE_SECONDS: ${JWT_CLOCK_TOLERANCE_SECONDS:-5}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-30}
+      HTTP_HOST: 0.0.0.0
+      HTTP_BODY_LIMIT_BYTES: ${HTTP_BODY_LIMIT_BYTES:-262144}
+      HTTP_REQUEST_TIMEOUT_MS: ${HTTP_REQUEST_TIMEOUT_MS:-30000}
+      HTTP_HEADERS_TIMEOUT_MS: ${HTTP_HEADERS_TIMEOUT_MS:-35000}
+      HTTP_KEEP_ALIVE_TIMEOUT_MS: ${HTTP_KEEP_ALIVE_TIMEOUT_MS:-5000}
+      HTTP_THROTTLE_TTL_MS: ${HTTP_THROTTLE_TTL_MS:-60000}
+      HTTP_THROTTLE_LIMIT: ${HTTP_THROTTLE_LIMIT:-120}
+      DB_POOL_MAX: ${DB_POOL_MAX:-10}
+      DB_RETRY_ATTEMPTS: ${DB_RETRY_ATTEMPTS:-3}
+      DB_RETRY_DELAY_MS: ${DB_RETRY_DELAY_MS:-2000}
+      DB_CONNECTION_TIMEOUT_MS: ${DB_CONNECTION_TIMEOUT_MS:-5000}
+      DB_IDLE_TIMEOUT_MS: ${DB_IDLE_TIMEOUT_MS:-30000}
+      DB_STATEMENT_TIMEOUT_MS: ${DB_STATEMENT_TIMEOUT_MS:-15000}
+      DB_LOCK_TIMEOUT_MS: ${DB_LOCK_TIMEOUT_MS:-5000}
+    secrets: [jwt_public, jwt_private]
+    depends_on:
+      auth-db: { condition: service_healthy }
+
+  gateway:
+    <<: *runtime
+    image: nginxinc/nginx-unprivileged:1.28-bookworm
+    mem_limit: 128m
+    ports: ['127.0.0.1:8080:8080']
+    volumes: ['./infra/nginx.conf:/etc/nginx/nginx.conf:ro']
+    depends_on:
+      auth: { condition: service_healthy }
+
+secrets:
+  jwt_public: { file: ./.secrets/jwt-public.pem }
+  jwt_private: { file: ./.secrets/jwt-private.pem }
+networks:
+  backend: { driver: bridge }
+volumes:
+  auth_data:
