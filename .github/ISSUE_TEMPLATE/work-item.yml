@@ -1,0 +1,34 @@
+name: Work item
+description: Define a verifiable task and link it to YouTrack
+title: "[task] "
+body:
+  - type: input
+    id: youtrack
+    attributes:
+      label: YouTrack issue
+      description: Actual issue ID and URL.
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+  - type: input
+    id: deadline
+    attributes:
+      label: Target date
+      description: YYYY-MM-DD; distinguish a proposal from an agreed deadline.
