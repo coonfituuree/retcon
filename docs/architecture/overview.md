@@ -1,5 +1,7 @@
 # My Auth architecture
 
+This page describes the current executable architecture. The [future microservice architecture](../future/06-target-architecture.md) covers gRPC services for container accounting, settlements, logistics and tracking; those services are not implemented in this baseline.
+
 I run one NestJS service and one PostgreSQL database in this milestone. Nginx provides the public entry point. My HTTP client uses the API; a working frontend is outside this delivery.
 
 ```mermaid
