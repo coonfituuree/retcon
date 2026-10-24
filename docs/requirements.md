@@ -1,5 +1,7 @@
 # My Auth requirements
 
+The [expanded future requirements](future/08-requirements-and-quality.md) cover container accounting, settlements, supplier tracking, delivery and collection, and the gRPC target architecture. Their `FUT-*` identifiers are planned specification references, separate from the current criteria below.
+
 I treat all requirements below as mandatory for this milestone. Code availability and successful acceptance are separate states.
 
 | ID     | Requirement               | Acceptance criterion                                                                                        | Issue / scenario      |

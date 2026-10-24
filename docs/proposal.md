@@ -18,6 +18,6 @@ My present implementation is Auth. It covers organizations, roles, users and ses
 
 ## Boundaries
 
-I include individual identification, locations, movements, local capture, synchronization and auditable discrepancy handling in the target product. I exclude full ERP, deposits and financial settlement, RFID hardware, route planning and production HA operations from the initial scope.
+The original milestone includes individual identification, locations, movements, local capture, synchronization and auditable discrepancy handling. Deposits, financial settlement and route planning were deferred from that initial scope. The [expanded future product concept](future/README.md) now includes settlements and an accountant workspace, delivery and collection planning, a live supplier map, and gRPC microservices. A complete ERP, advanced route optimization, RFID hardware and production HA remain separate later considerations. The available implementation remains Auth.
 
 The engineering challenge is preserving accounting meaning across disconnected and concurrent activity. I do not claim new cryptographic primitives or a measured business benefit. Requirements and evidence are developed in the [documentation index](README.md).

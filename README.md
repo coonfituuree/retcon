@@ -2,6 +2,8 @@
 
 **A reusable-container tracking system with offline operation capture and synchronization conflict resolution.**
 
+The [full future product concept](docs/future/README.md) expands Retcon with container accounting, settlements and deposits, an accountant workspace, deliveries and collections, a live supplier map, and a target microservice architecture using gRPC. It includes user scenarios, data models, acceptance criteria and a phased implementation plan. These are planned capabilities; the implementation status below remains the current baseline.
+
 I am developing Retcon as my individual graduation project. I want warehouse and logistics staff to record how reusable packaging moves between locations, retain the history of each item, and reconcile operations recorded while connectivity is unavailable.
 
 ## Project information
@@ -37,7 +39,7 @@ I do not claim measured economic savings, environmental benefits or a new crypto
 
 ## Scope and current development status
 
-The overall project scope includes identity, accounting, offline capture, synchronization and conflict review. A complete ERP, financial settlement, route optimization, RFID equipment and a production HA platform are outside the initial scope.
+The initial milestone covers identity, container accounting, offline capture, synchronization and conflict review. Its original scope deferred financial settlement, route planning, RFID equipment and a production HA platform. The [expanded future scope](docs/future/README.md) now includes settlements, deposits, delivery and collection planning, and a live supplier map. A complete ERP and advanced route optimization remain later possibilities; these plans do not change the current implementation status.
 
 | Area                           | Current status                                                                                                |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
