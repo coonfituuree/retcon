@@ -13,7 +13,7 @@
     "format": "prettier --write . ../README.md ../CONTRIBUTING.md \"../docs/**/*.md\" \"../.github/**/*.{yml,yaml,md}\"",
     "format:check": "prettier --check . ../README.md ../CONTRIBUTING.md \"../docs/**/*.md\" \"../.github/**/*.{yml,yaml,md}\"",
     "setup:local": "node scripts/setup-local.mjs",
-    "infra:up": "docker compose up -d auth-db",
+    "infra:up": "docker compose up -d auth-db redis",
     "up": "docker compose up --build -d",
     "down": "docker compose down",
     "dev": "pnpm build && concurrently -k \"pnpm --filter @retcon/auth watch\" \"node --watch --env-file=.env auth/dist/main.js\""

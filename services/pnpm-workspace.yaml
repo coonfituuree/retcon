@@ -4,6 +4,15 @@ packages:
 injectWorkspacePackages: true
 syncInjectedDepsAfterScripts:
   - build
+packageExtensions:
+  'connect-redis@10':
+    peerDependencies:
+      '@types/express-session': '^1.19.0'
+overrides:
+  # GHSA-27r3-jxmh-p828: patched request decompression handling.
+  'body-parser@>=2.0.0 <2.4.0': 2.4.0
+  # GHSA-q7qp-rjg7-q26m: patched asynchronous upload-filter teardown.
+  'multer@>=2.0.0 <2.5.0': 2.5.0
 ignoredBuiltDependencies:
   - '@scarf/scarf'
 onlyBuiltDependencies:

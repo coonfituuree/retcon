@@ -28,6 +28,26 @@ services:
       timeout: 3s
       retries: 20
 
+  redis:
+    image: redis:8.2-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --requirepass
+      - ${REDIS_PASSWORD:?Run pnpm setup:local}
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?Run pnpm setup:local}
+    ports: ['127.0.0.1:6379:6379']
+    volumes: [redis_data:/data]
+    networks: [backend]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   auth:
     <<: *runtime
     build: { context: ., dockerfile: auth/Dockerfile, target: runtime }
@@ -64,16 +84,30 @@ services:
       DB_IDLE_TIMEOUT_MS: ${DB_IDLE_TIMEOUT_MS:-30000}
       DB_STATEMENT_TIMEOUT_MS: ${DB_STATEMENT_TIMEOUT_MS:-15000}
       DB_LOCK_TIMEOUT_MS: ${DB_LOCK_TIMEOUT_MS:-5000}
+      REDIS_URI: redis://:${REDIS_PASSWORD:?Run pnpm setup:local}@redis:6379/0
+      REDIS_CONNECT_TIMEOUT_MS: ${REDIS_CONNECT_TIMEOUT_MS:-5000}
+      REDIS_COMMAND_TIMEOUT_MS: ${REDIS_COMMAND_TIMEOUT_MS:-5000}
+      REDIS_RECONNECT_ATTEMPTS: ${REDIS_RECONNECT_ATTEMPTS:-3}
+      REDIS_RECONNECT_DELAY_MS: ${REDIS_RECONNECT_DELAY_MS:-500}
+      SESSION_SECRET: ${SESSION_SECRET:?Run pnpm setup:local}
+      SESSION_NAME: ${SESSION_NAME:-retcon.sid}
+      SESSION_DOMAIN: ${SESSION_DOMAIN:-}
+      SESSION_MAX_AGE: ${SESSION_MAX_AGE:-7d}
+      SESSION_HTTP_ONLY: ${SESSION_HTTP_ONLY:-true}
+      SESSION_SECURE: ${SESSION_SECURE:-true}
+      SESSION_SAME_SITE: ${SESSION_SAME_SITE:-lax}
+      SESSION_FOLDER: ${SESSION_FOLDER:-retcon:session:}
     secrets: [jwt_public, jwt_private]
     depends_on:
       auth-db: { condition: service_healthy }
+      redis: { condition: service_healthy }
 
   gateway:
     <<: *runtime
     image: nginxinc/nginx-unprivileged:1.28-bookworm
     mem_limit: 128m
     ports: ['127.0.0.1:8080:8080']
-    volumes: ['./infra/nginx.conf:/etc/nginx/nginx.conf:ro']
+    volumes: ['../infra/nginx.conf:/etc/nginx/nginx.conf:ro']
     depends_on:
       auth: { condition: service_healthy }
 
@@ -84,3 +118,4 @@ networks:
   backend: { driver: bridge }
 volumes:
   auth_data:
+  redis_data:
