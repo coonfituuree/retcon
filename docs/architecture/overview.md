@@ -2,13 +2,14 @@
 
 This page describes the current executable architecture. The [future microservice architecture](../future/06-target-architecture.md) covers gRPC services for container accounting, settlements, logistics and tracking; those services are not implemented in this baseline.
 
-I run one NestJS service and one PostgreSQL database in this milestone. Nginx provides the public entry point. My HTTP client uses the API; a working frontend is outside this delivery.
+I run one NestJS service, its PostgreSQL database, and Redis for browser-session middleware. Nginx provides the public entry point. My HTTP client uses the API; a working frontend is outside this delivery. Authentication still uses JWT and does not yet populate browser sessions.
 
 ```mermaid
 flowchart LR
   Client["HTTP client"] --> Gateway["Nginx :8080"]
   Gateway --> Auth["Auth :3001"]
   Auth --> DB[("Auth PostgreSQL")]
+  Auth --> Redis[("Redis session store")]
 ```
 
 ## Modules and ownership

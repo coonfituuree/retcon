@@ -5,3 +5,4 @@ export * from './security';
 export * from './http';
 export * from './module';
 export * from './database/typeorm-options';
+export * from './redis/redis.service';

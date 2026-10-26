@@ -44,7 +44,7 @@ The initial milestone covers identity, container accounting, offline capture, sy
 | Area                           | Current status                                                                                                |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | Identity backend               | Implemented: organizations, users, roles, registration, login, RS256 JWT, bcrypt, refresh rotation and logout |
-| Local backend environment      | Prepared: Auth, PostgreSQL and Nginx in Docker Compose, configuration examples and CI                         |
+| Local backend environment      | Prepared: Auth, PostgreSQL, Redis and Nginx in Docker Compose, configuration examples and CI                  |
 | Accounting and synchronization | Planned project capabilities; their services are not included in the current working tree                     |
 | Client                         | Next.js scaffold exists; the working UI and offline queue are not implemented                                 |
 | Verification                   | Static checks are available; live API acceptance and business experiments require recorded runs               |
@@ -56,21 +56,21 @@ The initial milestone covers identity, container accounting, offline capture, sy
 
 ![Current backend components](docs/diagrams/components.svg)
 
-My current executable backend contains **one Auth service**. Inside it I separate auth, users and organizations modules. PostgreSQL stores Identity data; Nginx exposes the API. Shared workspace packages provide Identity contracts and HTTP infrastructure. The target business capabilities above do not imply that their services already exist.
+My current executable backend contains **one Auth service**. Inside it I separate auth, users and organizations modules. PostgreSQL stores Identity data; Redis supports browser-session middleware; Nginx exposes the API. Login and authorization still use JWT, and do not yet establish authenticated browser sessions. Shared workspace packages provide Identity contracts and HTTP infrastructure. The target business capabilities above do not imply that their services already exist.
 
-I use **NestJS, TypeScript, @nestjs/config, TypeORM, PostgreSQL, class-validator, class-transformer, bcrypt, jsonwebtoken, Pino, pnpm, Docker Compose and Nginx**. I selected **Next.js** for the client. I document alternatives and tradeoffs in the [technology comparison](docs/research/technology-comparison.md).
+I use **NestJS, TypeScript, @nestjs/config, TypeORM, PostgreSQL, Redis, express-session, class-validator, class-transformer, bcrypt, jsonwebtoken, Pino, pnpm, Docker Compose and Nginx**. I selected **Next.js** for the client. I document alternatives and tradeoffs in the [technology comparison](docs/research/technology-comparison.md).
 
 ## Repository and documentation
 
 ```text
 retcon/
   frontend/             Next.js scaffold; separate from current backend work
+  infra/                Nginx configuration
   services/
     auth/               Executable Identity service
     shared/contracts/   Roles and principal claims
     shared/platform/    Configuration, security, HTTP and logging
     scripts/            Local setup and healthcheck
-    infra/              Nginx configuration
     compose.yaml
   docs/
     research/           Relevance, literature and comparisons
@@ -109,7 +109,7 @@ pnpm setup:local
 pnpm up
 ```
 
-Setup creates local credentials and RSA keys while preserving existing files. The current stack starts Auth, its PostgreSQL database and Nginx.
+Setup creates local credentials and RSA keys, preserves existing values and adds missing Redis/session settings to an existing environment file. The current stack starts Auth, PostgreSQL, Redis and Nginx. Re-run pnpm setup:local when upgrading an existing checkout.
 
 - API: http://localhost:8080/api/v1
 - Gateway health: http://localhost:8080/health

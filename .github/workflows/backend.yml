@@ -3,10 +3,24 @@ name: Backend
 on:
   push:
     paths:
-      ["services/**", ".github/**", "docs/**", "README.md", "CONTRIBUTING.md"]
+      [
+        "services/**",
+        "infra/**",
+        ".github/**",
+        "docs/**",
+        "README.md",
+        "CONTRIBUTING.md",
+      ]
   pull_request:
     paths:
-      ["services/**", ".github/**", "docs/**", "README.md", "CONTRIBUTING.md"]
+      [
+        "services/**",
+        "infra/**",
+        ".github/**",
+        "docs/**",
+        "README.md",
+        "CONTRIBUTING.md",
+      ]
 
 permissions:
   contents: read

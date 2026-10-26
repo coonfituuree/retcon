@@ -1,7 +1,18 @@
 import { createPrivateKey, createPublicKey } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { plainToInstance, Transform, Type } from 'class-transformer';
-import { IsIn, IsInt, IsNotEmpty, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  IsUrl,
+  Max,
+  Min,
+  MinLength,
+  validateSync,
+} from 'class-validator';
+import ms from 'ms';
 
 export type ServiceName = 'auth';
 
@@ -45,6 +56,22 @@ class Environment {
   @Type(() => Number) @IsInt() @Min(100) @Max(300_000) DB_STATEMENT_TIMEOUT_MS = 15_000;
   @Type(() => Number) @IsInt() @Min(100) @Max(300_000) DB_LOCK_TIMEOUT_MS = 5000;
 
+  @IsUrl({ protocols: ['redis', 'rediss'], require_tld: false, require_protocol: true })
+  REDIS_URI!: string;
+  @Type(() => Number) @IsInt() @Min(100) @Max(60_000) REDIS_CONNECT_TIMEOUT_MS = 5000;
+  @Type(() => Number) @IsInt() @Min(100) @Max(60_000) REDIS_COMMAND_TIMEOUT_MS = 5000;
+  @Type(() => Number) @IsInt() @Min(0) @Max(10) REDIS_RECONNECT_ATTEMPTS = 3;
+  @Type(() => Number) @IsInt() @Min(100) @Max(10_000) REDIS_RECONNECT_DELAY_MS = 500;
+
+  @IsString() @MinLength(32) SESSION_SECRET!: string;
+  @IsString() @IsNotEmpty() SESSION_NAME = 'retcon.sid';
+  @IsString() SESSION_DOMAIN = '';
+  @IsString() @IsNotEmpty() SESSION_MAX_AGE = '7d';
+  @IsIn(['true', 'false']) SESSION_HTTP_ONLY = 'true';
+  @IsIn(['true', 'false']) SESSION_SECURE = 'true';
+  @IsIn(['lax', 'strict', 'none']) SESSION_SAME_SITE: 'lax' | 'strict' | 'none' = 'lax';
+  @IsString() @IsNotEmpty() SESSION_FOLDER = 'retcon:session:';
+
   @IsUrl({ protocols: ['postgres', 'postgresql'], require_tld: false, require_protocol: true })
   databaseUrl!: string;
   @Type(() => Number) @IsInt() @Min(1) @Max(65535) port!: number;
@@ -60,6 +87,17 @@ export function createConfiguration(service: ServiceName) {
   const errors = validateSync(env, { validationError: { target: false, value: false } });
   if (errors.length)
     throw new Error(`Invalid environment: ${errors.map((error) => error.property).join(', ')}`);
+
+  const sessionMaxAgeMs = ms(env.SESSION_MAX_AGE as ms.StringValue);
+  if (!Number.isSafeInteger(sessionMaxAgeMs) || sessionMaxAgeMs <= 0)
+    throw new Error('SESSION_MAX_AGE must be a positive duration such as 7d');
+  if (env.SESSION_SAME_SITE === 'none' && env.SESSION_SECURE !== 'true')
+    throw new Error('SameSite=None requires SESSION_SECURE=true');
+  if (
+    env.NODE_ENV === 'production' &&
+    (env.SESSION_SECURE !== 'true' || env.SESSION_HTTP_ONLY !== 'true')
+  )
+    throw new Error('Production sessions require secure and HttpOnly cookies');
 
   const publicKey = readFileSync(env.JWT_PUBLIC_KEY_FILE, 'utf8');
   const parsedPublicKey = createPublicKey(publicKey);
@@ -101,6 +139,23 @@ export function createConfiguration(service: ServiceName) {
       idleTimeoutMs: env.DB_IDLE_TIMEOUT_MS,
       statementTimeoutMs: env.DB_STATEMENT_TIMEOUT_MS,
       lockTimeoutMs: env.DB_LOCK_TIMEOUT_MS,
+    },
+    redis: {
+      uri: env.REDIS_URI,
+      connectTimeoutMs: env.REDIS_CONNECT_TIMEOUT_MS,
+      commandTimeoutMs: env.REDIS_COMMAND_TIMEOUT_MS,
+      reconnectAttempts: env.REDIS_RECONNECT_ATTEMPTS,
+      reconnectDelayMs: env.REDIS_RECONNECT_DELAY_MS,
+    },
+    session: {
+      secret: env.SESSION_SECRET,
+      name: env.SESSION_NAME,
+      domain: env.SESSION_DOMAIN,
+      maxAgeMs: sessionMaxAgeMs,
+      httpOnly: env.SESSION_HTTP_ONLY === 'true',
+      secure: env.SESSION_SECURE === 'true',
+      sameSite: env.SESSION_SAME_SITE,
+      prefix: env.SESSION_FOLDER,
     },
     jwt: {
       publicKey,

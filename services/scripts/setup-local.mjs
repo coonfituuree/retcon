@@ -1,6 +1,7 @@
 import { generateKeyPairSync, randomBytes } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { parseEnv } from 'node:util';
 import path from 'node:path';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -35,6 +36,33 @@ if (!existsSync(envPath)) {
       `postgresql://retcon_${name}:${password}`,
     );
   }
+  env = env.replaceAll('replace-with-generated-redis-password', secret());
+  env = env.replace('replace-with-generated-session-secret', secret());
   writeFileSync(envPath, env, { flag: 'wx', mode: 0o600 });
 }
-console.log('Local environment and JWT keys are ready. Existing files were preserved.');
+
+const existing = parseEnv(readFileSync(envPath, 'utf8'));
+const defaults = parseEnv(readFileSync(path.join(root, '.env.example'), 'utf8'));
+const redisPassword = existing.REDIS_PASSWORD ?? randomBytes(24).toString('hex');
+const additions = {
+  ...Object.fromEntries(
+    Object.entries(defaults).filter(
+      ([key]) => key.startsWith('REDIS_') || key.startsWith('SESSION_'),
+    ),
+  ),
+  REDIS_PASSWORD: redisPassword,
+  REDIS_URI: `redis://:${encodeURIComponent(redisPassword)}@localhost:6379/0`,
+  SESSION_SECRET: randomBytes(24).toString('hex'),
+};
+const missing = Object.entries(additions).filter(([key]) => !Object.hasOwn(existing, key));
+if (missing.length) {
+  appendFileSync(
+    envPath,
+    '\n# Redis and session middleware\n' +
+      missing.map(([key, value]) => `${key}=${value}`).join('\n') +
+      '\n',
+  );
+}
+console.log(
+  'Local environment and keys are ready. Missing Redis/session settings were added; existing values were preserved.',
+);

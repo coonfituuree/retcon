@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { HealthController, HealthService } from './http';
 import { AccessGuard } from './security';
+import { RedisService } from './redis/redis.service';
 
 @Global()
 @Module({
@@ -21,8 +22,10 @@ import { AccessGuard } from './security';
   controllers: [HealthController],
   providers: [
     HealthService,
+    RedisService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: AccessGuard },
   ],
+  exports: [RedisService],
 })
 export class PlatformModule {}
