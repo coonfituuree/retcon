@@ -1,5 +1,7 @@
 # My project management workflow
 
+The [expanded implementation roadmap](../future/09-delivery-roadmap.md) describes future phases for accounting, settlements, supplier tracking and gRPC microservices. It supplements this current workflow and does not claim that new tracker issues or agreed deadlines already exist.
+
 I work individually: **Бартай Ғалым Рахымжанұлы**. My supervisor is **Макатов Арстан Кутжанович**. I own research, requirements, architecture, implementation, evaluation and documentation.
 
 I manage actual work items in [YouTrack](https://coonfituuree.youtrack.cloud/), project key RET. Each meaningful card needs an owner, expected outcome, priority, acceptance criteria and an agreed target date. The link points to the tracker instance; actual cards, assignments and VCS configuration must be verified there.
